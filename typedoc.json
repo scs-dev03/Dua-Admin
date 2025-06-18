@@ -1,0 +1,14 @@
+{
+  "entryPointStrategy": "expand",
+  "entryPoints": ["./src/"],
+  "exclude": ["**/*.spec.ts", "**/test/**", "**/__tests_/**"],
+  "excludeInternal": true,
+  "excludeProtected": true,
+  "excludePrivate": true,
+  "validation": {
+    "invalidLink": true,
+    "notExported": false
+  },
+  "readme": "./docs/helper_index.txt",
+  "out": "docs/tsdoc/"
+}
