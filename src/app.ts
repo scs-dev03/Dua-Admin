@@ -20,7 +20,7 @@ import {router as warehouseRouter} from './routes/warehouse.routes';
 import {router as userRouter} from './routes/user.routes';
 import {router as portalRouter} from './routes/portal.routes';
 import {router as mediaRouter} from './routes/media.routes';
-import {router as configRouter} from './routes/config.routes';
+// import {router as configRouter} from './routes/config.routes';
 import {config} from './_config';
 
 //
@@ -100,7 +100,7 @@ export const build = async (opts: AppConfig) => {
   app.use('/api/v1/user', userRouter);
   app.use('/api/v1/portal', portalRouter);
   app.use('/api/v1/media', mediaRouter);
-  app.use('/api/v1/config', configRouter);
+  // app.use('/api/v1/config', configRouter);
 
   // error handler
   app.use(ErrorHandlerMiddleware());

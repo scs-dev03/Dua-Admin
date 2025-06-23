@@ -4,7 +4,6 @@ import { User } from "../../_core/entities/db-00/User";
 import { FindManyOptions, In } from "typeorm";
 import { UserWarehouse } from "../../_core/entities/db-00/UserWarehouse";
 import { IntegratedPortalReport } from "../../_core/entities/db-00/IntegratedPortalReport";
-import { Config } from "../../_core/entities/db-00/Config";
 import { UserPortal } from "../../_core/entities/db-00/UserPortal";
 import { log } from "node:console";
 
@@ -88,7 +87,7 @@ for (const k in portals) {
       }
     });
 
-    const configs = await db00.getRepository(Config).find({});
+    // const configs = await db00.getRepository(Config).find({});
 
     const finalActionSheets = [];
     for (const key in integratedPortalReports) {
