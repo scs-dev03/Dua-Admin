@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": false,
+    "noUnusedLocals": true,
+    "allowUnreachableCode": false
+  },
+  "include": ["./src/**/*"],
+  "exclude": ["**/__test__/**", "**/*.spec.ts", "**/*.test.ts"]
+}
