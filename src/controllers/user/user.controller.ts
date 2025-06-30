@@ -213,52 +213,183 @@ for (const k in portals) {
     });
   };
 
-  update = async (request: Request, response: Response) => {
-    const userRepo = db00.getRepository(User);
-    const userWarehouseRepo = db00.getRepository(UserWarehouse);
-    const { name, password, warehouse_ids } = request.body;
-    const { userId } = request.params;
+//   update = async (request: Request, response: Response) => {
+//     const userRepo = db00.getRepository(User);
+//     const userWarehouseRepo = db00.getRepository(UserWarehouse);
+//     const { name, password, warehouse_ids } = request.body;
+//     const { userId } = request.params;
+//     console.log(userId,name,password,warehouse_ids);
+//     // console.log(`warehouse_idslength: ${warehouse_ids.length}`);
+    
+//     if (!warehouse_ids.length) {
+//       return response.status(400).json({ code: 400, message: "At least Select one warehouse" });
+//     }
 
-    if (!warehouse_ids.length) {
-      return response.status(400).json({ code: 400, message: "At least Select one warehouse" });
+//     try {
+//       const updatedData = await userRepo.update({ id: parseInt(userId) }, { name, password });
+//       console.log("updateddata",updatedData);
+      
+//       if (updatedData.affected === 0) {
+//         return response.status(404).json({ message: "User not found" });
+//       }
+//     } catch (error) {
+//       console.log(error, "error on create");
+//       if ((error as any).code === "ER_DUP_ENTRY") {
+//         return response.status(409).json({ code: 409, message: "Duplicate entry error: the data already exists." });
+//       }
+//       return response.status(400).json({ code: 400, message: "error while inserting data" });
+//     }
+//     const numericWarehouseIds = warehouse_ids.map((id: any) => Number(id));
+//     // console.log("numericWarehouseIds", numericWarehouseIds);
+
+
+//     try {
+//       // await userWarehouseRepo
+//       //   .createQueryBuilder()
+//       //   .delete()
+//       //   .where("user_id = :userId", { userId })
+//       //   .andWhere("warehouse_id NOT IN (:...warehouse_ids)", { warehouse_ids })
+//       //   .execute();
+
+//       await userWarehouseRepo
+//   .createQueryBuilder()
+//   .delete()
+//   .where("user_id = :userId", { userId: Number(userId) }) // 💡 cast to number
+//   .andWhere("warehouse_id NOT IN (:...warehouse_ids)", { warehouse_ids: numericWarehouseIds }) // 💡 converted
+//   .execute();
+  
+// console.log(userId , numericWarehouseIds);
+
+//       // await userWarehouseRepo.upsert(
+//       //   warehouse_ids.map((warehouse_id: number) => ({
+//       //     user_id: userId,
+//       //     warehouse_id: warehouse_id
+//       //   })),
+//       //   ["user_id", "warehouse_id"] // Unique constraint fields
+//       // );
+      
+//       await userWarehouseRepo.upsert(
+//   numericWarehouseIds.map((warehouse_id: number) => ({
+//     user_id: Number(userId),
+//     warehouse_id
+//   })),
+//   ["user_id", "warehouse_id"]
+// );
+
+//     } catch (error) {
+//       return response.status(400).json({ code: 400, message: "error while updating warehouses" });
+//     }
+
+//     return response.status(200).json({
+//       data: {}
+//     });
+//   };
+
+
+update = async (request: Request, response: Response) => {
+  const userRepo = db00.getRepository(User);
+  const userWarehouseRepo = db00.getRepository(UserWarehouse);
+  const { name, password, warehouse_ids } = request.body;
+  const { userId } = request.params;
+
+  // console.log("Incoming Data:", userId, name, password, warehouse_ids);
+
+  if (!Array.isArray(warehouse_ids) || warehouse_ids.length === 0) {
+    return response.status(400).json({ code: 400, message: "At least select one warehouse" });
+  }
+
+  const numericWarehouseIds = warehouse_ids
+    .map((id: any) => Number(id))
+    .filter(id => !isNaN(id));
+
+  if (!numericWarehouseIds.length) {
+    return response.status(400).json({ code: 400, message: "No valid warehouse IDs provided" });
+  }
+
+  // Step 1: Update user
+  try {
+    const updatedData = await userRepo.update({ id: Number(userId) }, { name, password });
+
+    // console.log("User Update Result:", updatedData);
+
+    if (updatedData.affected === 0) {
+      return response.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.error("User update error:", error);
+    if ((error as any).code === "ER_DUP_ENTRY") {
+      return response.status(409).json({ code: 409, message: "Duplicate entry error: the data already exists." });
+    }
+    return response.status(400).json({ code: 400, message: "Error while updating user details" });
+  }
+
+  // Step 2: Update user_warehouses
+  try {
+    const deleteQuery = userWarehouseRepo
+      .createQueryBuilder()
+      .delete()
+      .where("user_id = :userId", { userId: Number(userId) });
+
+    if (numericWarehouseIds.length > 0) {
+      deleteQuery.andWhere("warehouse_id NOT IN (:...warehouse_ids)", {
+        warehouse_ids: numericWarehouseIds
+      });
     }
 
-    try {
-      const updatedData = await userRepo.update({ id: parseInt(userId) }, { name, password });
-      if (updatedData.affected === 0) {
-        return response.status(404).json({ message: "User not found" });
-      }
-    } catch (error) {
-      console.log(error, "error on create");
-      if ((error as any).code === "ER_DUP_ENTRY") {
-        return response.status(409).json({ code: 409, message: "Duplicate entry error: the data already exists." });
-      }
-      return response.status(400).json({ code: 400, message: "error while inserting data" });
-    }
+    await deleteQuery.execute();
 
-    try {
-      await userWarehouseRepo
-        .createQueryBuilder()
-        .delete()
-        .where("user_id = :userId", { userId })
-        .andWhere("warehouse_id NOT IN (:...warehouse_ids)", { warehouse_ids })
-        .execute();
+    // ->> Upsert Does not work with MSSql
+    // await userWarehouseRepo.upsert(
+    //   numericWarehouseIds.map((warehouse_id: number) => ({
+    //     user_id: Number(userId),
+    //     warehouse_id
+    //   })),
+    //   ["user_id", "warehouse_id"]
+    // );
 
-      await userWarehouseRepo.upsert(
-        warehouse_ids.map((warehouse_id: number) => ({
-          user_id: userId,
-          warehouse_id: warehouse_id
-        })),
-        ["user_id", "warehouse_id"] // Unique constraint fields
-      );
-    } catch (error) {
-      return response.status(400).json({ code: 400, message: "error while updating warehouses" });
-    }
+    // -->>> It Deletes previous entries and insert the new data
 
-    return response.status(200).json({
-      data: {}
-    });
-  };
+//     for (const warehouse_id of numericWarehouseIds) {
+//   await userWarehouseRepo
+//     .createQueryBuilder()
+//     .insert()
+//     .into(UserWarehouse)
+//     .values({ user_id: Number(userId), warehouse_id })
+//     .orIgnore() // prevents duplicate insert error
+//     .execute();
+// }
+// for (const warehouse_id of numericWarehouseIds) {
+//   await db00.query(`
+//     MERGE INTO user_warehouses AS target
+//     USING (SELECT ? AS user_id, ? AS warehouse_id) AS source
+//     ON target.user_id = source.user_id AND target.warehouse_id = source.warehouse_id
+//     WHEN NOT MATCHED THEN
+//       INSERT (user_id, warehouse_id) VALUES (source.user_id, source.warehouse_id);
+//   `, [Number(userId), warehouse_id]);
+// }
+for (const warehouse_id of numericWarehouseIds) {
+  await db00.query(`
+    IF NOT EXISTS (
+      SELECT 1 FROM user_warehouses 
+      WHERE user_id = @0 AND warehouse_id = @1
+    )
+    INSERT INTO user_warehouses (user_id, warehouse_id)
+    VALUES (@0, @1);
+  `, [Number(userId), warehouse_id]);
+}
+
+
+  } catch (error) {
+    console.error("Warehouse update error:", error);
+    return response.status(400).json({ code: 400, message: "Error while updating warehouses" });
+  }
+
+  return response.status(200).json({
+    code: 200,
+    message: "User updated successfully",
+    data: {}
+  });
+};
 
   downloadActionSheets = async (request: Request, response: Response) => {
     const { name, id } = request.query;

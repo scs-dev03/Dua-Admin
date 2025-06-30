@@ -65,9 +65,12 @@ export class WarehouseController {
         
         const { name, dealer_id } = request.body;
         const { warehouseId } = request.params;
+        // console.log(name,dealer_id,warehouseId);
+        
         try {
             const updatedData = await warehouseRepo.update({ id: parseInt(warehouseId) }, { name, dealer_id: parseInt(dealer_id) });
-
+            // console.log(updatedData);
+            
             if (updatedData.affected === 0) {
                 return response.status(404).json({ message: "Warehouse not found" });
             }

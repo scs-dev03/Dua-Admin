@@ -33,5 +33,3 @@ router.post("/:userId/portal/:portalId/config", handler(user.updatePortalRuntime
 router.get("/:userId/config", handler(user.getConfig, options));
 router.put("/:userId", handler(user.update, options));
 router.get("/:userId", handler(user.getDetails, options));
-
-
